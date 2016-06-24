@@ -24,14 +24,20 @@ def main():
     logging_level = logging.INFO
 
     # parse args
-    parser = argparse.ArgumentParser(prog=sys.argv[0])
+    examples = "Example: {0} -s 1M -c 1,3,5,10-20 -e gbk filename.csv\n" \
+               "Example: {0} -s 1048576 -t -c name,gender -n filename.csv".format(sys.argv[0])
+    parser = argparse.ArgumentParser(prog=sys.argv[0],
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog=examples)
     parser.add_argument('filename', metavar='filename',
                         help='File to split.')
     parser.add_argument('-s', "--size", help='Max split size. Can be an integer like "10240", '
                                              'or human readable format like "10K".')
-    parser.add_argument('-c', "--column", action="store", help='select column')
+    parser.add_argument('-c', "--column", action="store",
+                        help='select column by number. '
+                             'Example: "1-3,5" means select the 1st to the 3rd, and the 5th column.')
     parser.add_argument('-n', "--column-name", action="store_true",
-                        help='select column by title instead of id. Should be used with -t')
+                        help='select column by title instead of id. Should be used with -t.')
     parser.add_argument('-t', "--title", action="store_true",
                         help="use the first line as title and add it to each file.")
     parser.add_argument('-e', "--encoding", action="store",
