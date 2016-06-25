@@ -2,6 +2,7 @@
 
 import logging
 import argparse
+import os
 import sys
 import re
 
@@ -140,8 +141,34 @@ def main():
                        suffix=("." + filename_extension) if filename_extension else "",
                        header=title_string)
 
+    total_size = os.fstat(f.fileno()).st_size
+    progressbar_width = 50
+
+    # setup progressbar
+    def progressbar():
+        new_progress = int(progressbar.byte_counter / total_size * 100)
+        if new_progress == progressbar.progress:
+            return
+        progressbar.progress = new_progress
+        # setup toolbar
+        sys.stdout.write("\b" * (progressbar_width + 5))  # return to start of line, after '['
+        sys.stdout.write("[{}]{}%".format("-" * (new_progress // 2) +
+                                          " " * (progressbar_width - new_progress // 2), new_progress))
+        if new_progress == 100:
+            print('\n')
+        sys.stdout.flush()
+
+    progressbar.progress = 0
+    progressbar.byte_counter = 0
+
     # split the CSV file
+    print("Converting...")
+    counter = 0
     for i in f:
+        if counter % 100 == 0:
+            progressbar()
+        counter += 1
+        progressbar.byte_counter += len(i)
         line = i.strip("\n")
         if not args.filter or rf.filter(line):
             if columns:
