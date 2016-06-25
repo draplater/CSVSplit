@@ -4,6 +4,8 @@ import logging
 import argparse
 import sys
 import re
+
+from RowFilter import RowFilter
 from SegmentWriter import SegmentWriter
 from utils import read_size
 
@@ -24,8 +26,8 @@ def main():
     logging_level = logging.INFO
 
     # parse args
-    examples = "Example: {0} -s 1M -c 1,3,5,10-20 -e gbk filename.csv\n" \
-               "Example: {0} -s 1048576 -t -c name,gender -n filename.csv".format(sys.argv[0])
+    examples = "Example: {0} -s 1M -c 1,3,5,10-20 -e gbk -f \'#1 == \"male\"\' filename.csv\n" \
+               "Example: {0} -s 1048576 -t -c name,gender -f \'int(#:age:) <= 20\' -n filename.csv".format(sys.argv[0])
     parser = argparse.ArgumentParser(prog=sys.argv[0],
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog=examples)
@@ -36,6 +38,12 @@ def main():
     parser.add_argument('-c', "--column", action="store",
                         help='select column by number. '
                              'Example: "1-3,5" means select the 1st to the 3rd, and the 5th column.')
+    parser.add_argument('-f', '--filter', action="store",
+                        help="Filter row with specific condition. Use python expression. "
+                             "\"#n\" means using the string value of n-th column. "
+                             "When using -t, \"#:name:\" means using the string value of the column "
+                             "whose title is \"name\". "
+                             "Example: \'#1 == \"male\"\'")
     parser.add_argument('-n', "--column-name", action="store_true",
                         help='select column by title instead of id. Should be used with -t.')
     parser.add_argument('-t', "--title", action="store_true",
@@ -114,6 +122,13 @@ def main():
     else:
         title_string = ""
 
+    # initiate row filter
+    if args.filter:
+        if args.column_name:
+            rf = RowFilter(args.filter.strip("\n"), title_string.split(","))
+        else:
+            rf = RowFilter(args.filter.strip("\n"))
+
     # create segment writer
     try:
         filename_base, filename_extension = args.filename.rsplit(".", 1)
@@ -127,10 +142,10 @@ def main():
 
     # split the CSV file
     for i in f.readlines():
-        if not columns:
-            sw.write_line(i.strip("\n"))
-        else:
-            line = column_choose(i.strip("\n"), columns)
+        line = i.strip("\n")
+        if not args.filter or rf.filter(line):
+            if columns:
+                line = column_choose(line, columns)
             sw.write_line(line)
 
 
