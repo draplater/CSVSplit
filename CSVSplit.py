@@ -42,7 +42,7 @@ def main():
     parser.add_argument('-f', '--filter', action="store",
                         help="Filter row with specific condition. Use python expression. "
                              "\"#n\" means using the string value of n-th column. "
-                             "When using -t, \"#:name:\" means using the string value of the column "
+                             "When using -n, \"#:name:\" means using the string value of the column "
                              "whose title is \"name\". "
                              "Example: \'#1 == \"male\"\'")
     parser.add_argument('-n', "--column-name", action="store_true",
