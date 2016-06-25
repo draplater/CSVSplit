@@ -5,6 +5,7 @@ import argparse
 import sys
 import re
 
+from BufferReader import BufferedReader
 from RowFilter import RowFilter
 from SegmentWriter import SegmentWriter
 from utils import read_size
@@ -100,10 +101,11 @@ def main():
 
     # open file
     f = open(args.filename, encoding=args.encoding)
+    reader = BufferedReader(f)
 
     # extract title from the first line
     if args.title:
-        title_string = f.readline().strip("\n")
+        title_string = reader.readline()
         # process column name selector
         if args.column_name:
             columns_ids = []
@@ -141,8 +143,10 @@ def main():
                        header=title_string)
 
     # split the CSV file
-    for i in f.readlines():
-        line = i.strip("\n")
+    while True:
+        line = reader.readline()
+        if not line:
+            break
         if not args.filter or rf.filter(line):
             if columns:
                 line = column_choose(line, columns)
