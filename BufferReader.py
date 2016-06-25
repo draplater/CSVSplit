@@ -1,8 +1,9 @@
 import os
+import threading
 from io import StringIO
-from collections import deque
 
 import sys
+from queue import Queue, Empty
 
 
 class BufferedReader:
@@ -12,22 +13,27 @@ class BufferedReader:
 
     progressbar_width = 50
 
-    def __init__(self, f, buf_size=256 * 1024):
+    def __init__(self, f, queue_size=256):
         self.f = f
         self.total_size = os.fstat(f.fileno()).st_size
-        self.buf_size = buf_size
-        self.lines = deque()
+        self.reading_thread = threading.Thread(target=self.__read)
+        self.lines = Queue(queue_size)
         self.progress = 0
         self.eof = False
+        self.reading_thread.start()
 
     def __read(self):
-        for i in range(200):
+        counter = 0
+        while True:
             line = self.f.readline()
             if not line:
                 self.eof = True
+                self.__progressbar()
                 break
-            self.lines.append(line.strip("\n"))
-        self.__progressbar()
+            self.lines.put(line.strip("\n"))
+            if counter % 100 == 0:
+                self.__progressbar()
+            counter += 1
 
     def __progressbar(self):
         progress = int(self.f.tell() / self.total_size * 100)
@@ -43,9 +49,10 @@ class BufferedReader:
         sys.stdout.flush()
 
     def readline(self):
-        if not self.lines:
-            if self.eof:
+        if not self.reading_thread.is_alive():
+            if self.lines.empty():
                 return ""
-            self.__read()
-        return self.lines.popleft()
-
+        try:
+            return self.lines.get(timeout=1)
+        except Empty:
+            return self.readline()
