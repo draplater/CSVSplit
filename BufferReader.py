@@ -16,31 +16,18 @@ class BufferedReader:
         self.f = f
         self.total_size = os.fstat(f.fileno()).st_size
         self.buf_size = buf_size
-        self.residue_buffer = StringIO()
         self.lines = deque()
         self.progress = 0
         self.eof = False
 
     def __read(self):
-        def extract_buffer():
-            self.lines.append(self.residue_buffer.getvalue())
-            self.residue_buffer.truncate(0)
-            self.residue_buffer.seek(0)
-
-        buf = self.f.read(self.buf_size)
-        self.__progressbar()
-        if len(buf) != self.buf_size:
-            self.eof = True
-        while True:
-            line_pos = buf.find("\n")
-            if line_pos < 0:
-                self.residue_buffer.write(buf)
+        for i in range(200):
+            line = self.f.readline()
+            if not line:
+                self.eof = True
                 break
-            self.residue_buffer.write(buf[:line_pos])
-            extract_buffer()
-            buf = buf[line_pos+1:]
-        if self.eof:
-            extract_buffer()
+            self.lines.append(line.strip("\n"))
+        self.__progressbar()
 
     def __progressbar(self):
         progress = int(self.f.tell() / self.total_size * 100)
@@ -58,7 +45,6 @@ class BufferedReader:
     def readline(self):
         if not self.lines:
             if self.eof:
-                assert len(self.residue_buffer) == 0
                 return ""
             self.__read()
         return self.lines.popleft()
