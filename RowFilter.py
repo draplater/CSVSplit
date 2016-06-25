@@ -19,7 +19,7 @@ class RowFilter:
         self.row_names = row_names
         if self.row_names:
             # #:name: == 5 -> named_data["name"] == 5
-            self.expression = re.sub(r"#:(.+):", r'named_data["\1"]',
+            self.expression = re.sub(r"#:(.+?):", r'named_data["\1"]',
                                      self.expression)
 
     def filter(self, line):
