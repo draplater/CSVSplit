@@ -141,7 +141,7 @@ def main():
                        header=title_string)
 
     # split the CSV file
-    for i in f.readlines():
+    for i in f:
         line = i.strip("\n")
         if not args.filter or rf.filter(line):
             if columns:
