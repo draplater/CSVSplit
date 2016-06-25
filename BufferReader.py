@@ -12,7 +12,7 @@ class BufferedReader:
 
     progressbar_width = 50
 
-    def __init__(self, f, buf_size=4096):
+    def __init__(self, f, buf_size=256 * 1024):
         self.f = f
         self.total_size = os.fstat(f.fileno()).st_size
         self.buf_size = buf_size
@@ -31,11 +31,14 @@ class BufferedReader:
         self.__progressbar()
         if len(buf) != self.buf_size:
             self.eof = True
-        for i in buf:
-            if i == "\n":
-                extract_buffer()
-            else:
-                self.residue_buffer.write(i)
+        while True:
+            line_pos = buf.find("\n")
+            if line_pos < 0:
+                self.residue_buffer.write(buf)
+                break
+            self.residue_buffer.write(buf[:line_pos])
+            extract_buffer()
+            buf = buf[line_pos+1:]
         if self.eof:
             extract_buffer()
 
